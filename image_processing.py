@@ -6,29 +6,29 @@ import os
 class ImageProcessor:
     def __init__(self, option='faces', path_cv2_models=None):
 
-        self.model_fullpath = None
-        self.model = None
+        self.models = {}
         self.path_cv2_models = os.getcwd() + '\\flir_env\\Lib\\site-packages\\cv2\\data\\' if path_cv2_models is None else path_cv2_models
         self.__processor = self.__select_processor(option)
 
     def __select_processor(self, option):
-        POSSIBLE_OPTIONS = ['faces']
+        POSSIBLE_OPTIONS = ['faces', 'faces_and_eyes']
 
         if option not in POSSIBLE_OPTIONS:
             raise ValueError('\'{}\' is not a valid option ({})'.format(option, POSSIBLE_OPTIONS))
 
         if option == 'faces':
-            self.model_fullpath = self.path_cv2_models + 'haarcascade_frontalface_default.xml'
-            self.model = cv2.CascadeClassifier(self.model_fullpath)
+            self.models['faces'] = cv2.CascadeClassifier(self.path_cv2_models + 'haarcascade_frontalface_default.xml')
             return self.__detect_and_draw_faces
+        elif option == 'faces_and_eyes':
+            self.models['faces'] = cv2.CascadeClassifier(self.path_cv2_models + 'haarcascade_frontalface_default.xml')
+            self.models['eyes'] = cv2.CascadeClassifier(self.path_cv2_models + 'haarcascade_eye.xml')
+            return self.__detect_and_draw_faces_and_eyes
 
-    def __detect_and_draw_faces(self, frame):
-
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    def __detect_and_draw_faces(self, frame, gray_frame):
 
         # Detect faces
-        faces = self.model.detectMultiScale(
-            gray,
+        faces = self.models['faces'].detectMultiScale(
+            gray_frame,
             scaleFactor=1.1,
             minNeighbors=5,
             minSize=(30, 30),
@@ -39,8 +39,25 @@ class ImageProcessor:
         for (x, y, w, h) in faces:
             cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
+    def __detect_and_draw_eyes(self, frame, gray_frame):
+        eyes = self.models['eyes'].detectMultiScale(
+            gray_frame,
+            scaleFactor=1.3,
+            minNeighbors=3,
+            flags=cv2.CASCADE_SCALE_IMAGE
+        )
+
+        for (ex, ey, ew, eh) in eyes:
+            cv2.rectangle(frame, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
+
+    def __detect_and_draw_faces_and_eyes(self, frame, gray_frame):
+        self.__detect_and_draw_faces(frame, gray_frame)
+        self.__detect_and_draw_eyes(frame, gray_frame)
+
     def process_image(self, image):
-        self.__processor(image)
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        self.__processor(image, gray)
+
 
 class StreamProcessor:
 
