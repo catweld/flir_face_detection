@@ -27,7 +27,7 @@ class FlirImageExtractor:
         self.flir_img_filename = ""
         self.image_suffix = "_rgb_image.jpg"
         self.thumbnail_suffix = "_rgb_thumb.jpg"
-        self.thermal_suffix = "_thermal.png"
+        self.thermal_suffix = "_thermal.jpg"
         self.default_distance = 1.0
 
         # valid for PNG thermal images
@@ -36,8 +36,6 @@ class FlirImageExtractor:
 
         self.rgb_image_np = None
         self.thermal_image_np = None
-
-    pass
 
     def process_image(self, flir_img_filename):
         """
@@ -117,7 +115,8 @@ class FlirImageExtractor:
         meta = json.loads(meta_json.decode())[0]
 
         # exifread can't extract the embedded thermal image, use exiftool instead
-        thermal_img_bytes = subprocess.check_output([self.exiftool_path, "-RawThermalImage", "-b", self.flir_img_filename])
+        thermal_img_bytes = subprocess.check_output(
+            [self.exiftool_path, "-RawThermalImage", "-b", self.flir_img_filename])
         thermal_img_stream = io.BytesIO(thermal_img_bytes)
 
         thermal_img = Image.open(thermal_img_stream)
@@ -227,7 +226,7 @@ class FlirImageExtractor:
 
         img_visual = Image.fromarray(rgb_np)
         thermal_normalized = (thermal_np - np.amin(thermal_np)) / (np.amax(thermal_np) - np.amin(thermal_np))
-        img_thermal = Image.fromarray(np.uint8(cm.inferno(thermal_normalized) * 255))
+        img_thermal = Image.fromarray(np.uint8(cm.inferno(thermal_normalized)[:, :, :3] * 255))
 
         fn_prefix, _ = os.path.splitext(self.flir_img_filename)
         thermal_filename = fn_prefix + self.thermal_suffix
@@ -263,7 +262,7 @@ class FlirImageExtractor:
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Extract and visualize Flir Image data')
-    parser.add_argument('-i', '--input', type=str, help='Input image. Ex. img.jpg', required=True)
+    parser.add_argument('-i', '--input', type=str, help='Input image. Ex. img.jpg', required=False)
     parser.add_argument('-p', '--plot', help='Generate a plot using matplotlib', required=False, action='store_true')
     parser.add_argument('-exif', '--exiftool', type=str, help='Custom path to exiftool', required=False,
                         default='exiftool')
