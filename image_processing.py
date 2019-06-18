@@ -11,7 +11,7 @@ class ImageProcessor:
         self.__processor = self.__select_processor(option)
 
     def __select_processor(self, option):
-        POSSIBLE_OPTIONS = ['faces', 'faces_and_eyes']
+        POSSIBLE_OPTIONS = ['faces', 'faces_and_eyes', 'better_faces_and_eyes']
 
         if option not in POSSIBLE_OPTIONS:
             raise ValueError('\'{}\' is not a valid option ({})'.format(option, POSSIBLE_OPTIONS))
@@ -23,8 +23,13 @@ class ImageProcessor:
             self.models['faces'] = cv2.CascadeClassifier(self.path_cv2_models + 'haarcascade_frontalface_default.xml')
             self.models['eyes'] = cv2.CascadeClassifier(self.path_cv2_models + 'haarcascade_eye.xml')
             return self.__detect_and_draw_faces_and_eyes
+        elif option == 'better_faces_and_eyes':
+            self.models['faces'] = cv2.CascadeClassifier(self.path_cv2_models + 'haarcascade_frontalface_default.xml')
+            self.models['eyes'] = cv2.CascadeClassifier(self.path_cv2_models + 'haarcascade_eye.xml')
+            return self.__detect_and_draw_faces_and_eyes_better
 
-    def __detect_and_draw_faces(self, frame, gray_frame):
+
+    def __detect_faces(self, gray_frame):
 
         # Detect faces
         faces = self.models['faces'].detectMultiScale(
@@ -35,11 +40,14 @@ class ImageProcessor:
             flags=cv2.CASCADE_SCALE_IMAGE,
         )
 
+        return faces
+
+    def __draw_faces(self, faces, frame):
         # Draw rectangle around the faces
         for (x, y, w, h) in faces:
             cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
 
-    def __detect_and_draw_eyes(self, frame, gray_frame):
+    def __detect_eyes(self, gray_frame):
         eyes = self.models['eyes'].detectMultiScale(
             gray_frame,
             scaleFactor=1.3,
@@ -47,12 +55,21 @@ class ImageProcessor:
             flags=cv2.CASCADE_SCALE_IMAGE
         )
 
+        return eyes
+
+    def __draw_eyes(self, eyes, frame):
         for (ex, ey, ew, eh) in eyes:
             cv2.rectangle(frame, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
 
     def __detect_and_draw_faces_and_eyes(self, frame, gray_frame):
-        self.__detect_and_draw_faces(frame, gray_frame)
-        self.__detect_and_draw_eyes(frame, gray_frame)
+        faces = self.__detect_faces(gray_frame)
+        self.__draw_faces(faces, frame)
+
+        eyes = self.__detect_eyes(gray_frame)
+        self.__draw_eyes(eyes, frame)
+
+    def __detect_and_draw_faces_and_eyes_better(self, frame, gray_frame):
+        pass
 
     def process_image(self, image):
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
