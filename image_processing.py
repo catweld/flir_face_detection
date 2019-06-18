@@ -1,6 +1,12 @@
-import cv2
+# import cv2
 import sys
 import os
+
+# this is just to unconfuse pycharm
+try:
+    from cv2 import cv2
+except ImportError:
+    pass
 
 
 class ImageProcessor:
@@ -9,6 +15,7 @@ class ImageProcessor:
         self.models = {}
         self.path_cv2_models = os.getcwd() + '\\flir_env\\Lib\\site-packages\\cv2\\data\\' if path_cv2_models is None else path_cv2_models
         self.__processor = self.__select_processor(option)
+        self.drawings = {'rectangle': [], 'line': [], 'circle': []}
 
     def __select_processor(self, option):
         POSSIBLE_OPTIONS = ['faces', 'faces_and_eyes', 'better_faces_and_eyes']
@@ -27,7 +34,6 @@ class ImageProcessor:
             self.models['faces'] = cv2.CascadeClassifier(self.path_cv2_models + 'haarcascade_frontalface_default.xml')
             self.models['eyes'] = cv2.CascadeClassifier(self.path_cv2_models + 'haarcascade_eye.xml')
             return self.__detect_and_draw_faces_and_eyes_better
-
 
     def __detect_faces(self, gray_frame):
 
@@ -51,7 +57,7 @@ class ImageProcessor:
         eyes = self.models['eyes'].detectMultiScale(
             gray_frame,
             scaleFactor=1.3,
-            minNeighbors=3,
+            minNeighbors=15,
             flags=cv2.CASCADE_SCALE_IMAGE
         )
 
@@ -69,7 +75,29 @@ class ImageProcessor:
         self.__draw_eyes(eyes, frame)
 
     def __detect_and_draw_faces_and_eyes_better(self, frame, gray_frame):
-        pass
+        faces = self.__detect_faces(gray_frame)
+        # self.__draw_faces(faces, frame)
+
+        if len(faces) == 0:
+            # eyes = self.__detect_eyes(gray_frame)
+            # self.__draw_eyes(eyes, frame)
+            pass
+        else:
+            for face in faces:
+                (x, y, w, h) = face
+                roi_gray = gray_frame[y:y + h, x:x + w]
+                roi_color = frame[y:y + h, x:x + w]
+                eyes = self.__detect_eyes(roi_gray)
+
+                if len(eyes) == 2:
+                    self.__draw_faces([face], frame)
+                    for (ex, ey, ew, eh) in eyes:
+                        cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
+
+                    eyes_centers = [(ex + ew//2, ey + eh//2) for (ex, ey, ew, eh) in eyes]
+
+                    cv2.line(roi_color, (eyes_centers[0][0], eyes_centers[0][1]),
+                             (eyes_centers[1][0], eyes_centers[1][1]), (66, 215, 244), 1)
 
     def process_image(self, image):
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
