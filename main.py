@@ -14,9 +14,15 @@ def main_flir_image_processor():
     file_name = input_file.split('/')[1].split('.')[0]
 
     fie = FlirImageExtractor()
-    fie.process_image(input_file)
+    fie.process_image(input_file, upsample_thermal=True)
 
     # fie.plot()
+
+    rgb_image = fie.get_rgb_np()
+
+    # Creating region boundaries
+    # image_processor = ImageProcessor(option='dlib_68landmarks')
+    # image_processor.process_image()
 
     # fie.export_thermal_to_csv('thermals_csv/'+file_name+'_thermal_csv.csv')
 
@@ -28,5 +34,5 @@ def main_flir_video_processor():
 
 
 if __name__ == '__main__':
-    main_webcam_stream()
-    # main_flir_image_processor()
+    # main_webcam_stream()
+    main_flir_image_processor()

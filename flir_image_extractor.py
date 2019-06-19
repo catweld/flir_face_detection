@@ -18,6 +18,8 @@ from matplotlib import pyplot as plt
 
 import numpy as np
 
+from skimage.transform import resize
+
 
 class FlirImageExtractor:
 
@@ -37,7 +39,7 @@ class FlirImageExtractor:
         self.rgb_image_np = None
         self.thermal_image_np = None
 
-    def process_image(self, flir_img_filename):
+    def process_image(self, flir_img_filename, upsample_thermal=False):
         """
         Given a valid image path, process the file: extract real thermal values
         and a thumbnail for comparison (generally thumbnail is on the visible spectre)
@@ -59,6 +61,9 @@ class FlirImageExtractor:
 
         self.rgb_image_np = self.extract_embedded_image()
         self.thermal_image_np = self.extract_thermal_image()
+
+        if upsample_thermal:
+            self.thermal_image_np = resize(self.thermal_image_np, self.rgb_image_np.shape[:2])
 
     def get_image_type(self):
         """
@@ -222,7 +227,7 @@ class FlirImageExtractor:
         :return:
         """
         rgb_np = self.get_rgb_np()
-        thermal_np = self.extract_thermal_image()
+        thermal_np = self.extract_thermal_image() if self.thermal_image_np is None else self.thermal_image_np
 
         img_visual = Image.fromarray(rgb_np)
         thermal_normalized = (thermal_np - np.amin(thermal_np)) / (np.amax(thermal_np) - np.amin(thermal_np))

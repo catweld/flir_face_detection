@@ -3,6 +3,7 @@ import sys
 import os
 from geometer import *
 import dlib
+from math import sqrt, ceil
 
 # this is just to unconfuse pycharm
 try:
@@ -137,7 +138,29 @@ class ImageProcessor:
             for n in range(0, 68):
                 x = landmarks.part(n).x
                 y = landmarks.part(n).y
-                cv2.circle(frame, (x, y), 4, (255, 0, 0), -1)
+                # cv2.circle(frame, (x, y), 4, (255, 0, 0), -1)
+
+            # Draw 2 circles.
+            # One that passes through points 40 and 28, and with their distance as diameter
+            # Another one that passas through 28 and 43, and with their distance as diameter
+            # TODO: create a class representing landmarks
+            center_periorbital_left = ((landmarks.part(28).x + landmarks.part(40).x)//2,
+                                       (landmarks.part(28).y + landmarks.part(40).y)//2)
+
+            radius_periorbital_left = ceil(sqrt((landmarks.part(28).x - landmarks.part(40).x) ** 2
+                                           + (landmarks.part(28).y - landmarks.part(40).y) ** 2))//2
+
+            center_periorbital_right = ((landmarks.part(43).x + landmarks.part(28).x)//2,
+                                       (landmarks.part(43).y + landmarks.part(28).y)//2)
+
+            radius_periorbital_right = ceil(sqrt((landmarks.part(43).x - landmarks.part(28).x) ** 2
+                                            + (landmarks.part(43).y - landmarks.part(28).y) ** 2))//2
+
+            cv2.circle(frame, (center_periorbital_left[0], center_periorbital_left[1]),
+                       radius_periorbital_left, (255, 0, 0), lineType=8)
+
+            cv2.circle(frame, (center_periorbital_right[0], center_periorbital_right[1]),
+                       radius_periorbital_right, (255, 0, 0), lineType=8)
 
     def process_image(self, image):
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
