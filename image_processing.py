@@ -1,6 +1,8 @@
 # import cv2
 import sys
 import os
+from geometer import *
+import dlib
 
 # this is just to unconfuse pycharm
 try:
@@ -10,15 +12,18 @@ except ImportError:
 
 
 class ImageProcessor:
-    def __init__(self, option='faces', path_cv2_models=None):
+    def __init__(self, option='faces', path_cv2_models=None, path_dlib_models=None):
 
         self.models = {}
+        self.dlib_detector = None
+        self.dlib_predictor = None
         self.path_cv2_models = os.getcwd() + '\\flir_env\\Lib\\site-packages\\cv2\\data\\' if path_cv2_models is None else path_cv2_models
+        self.path_dlib_models = os.getcwd() + '\\dlib_models\\' if path_dlib_models is None else path_dlib_models
         self.__processor = self.__select_processor(option)
         self.drawings = {'rectangle': [], 'line': [], 'circle': []}
 
     def __select_processor(self, option):
-        POSSIBLE_OPTIONS = ['faces', 'faces_and_eyes', 'better_faces_and_eyes']
+        POSSIBLE_OPTIONS = ['faces', 'faces_and_eyes', 'better_faces_and_eyes', 'dlib_68landmarks']
 
         if option not in POSSIBLE_OPTIONS:
             raise ValueError('\'{}\' is not a valid option ({})'.format(option, POSSIBLE_OPTIONS))
@@ -34,6 +39,10 @@ class ImageProcessor:
             self.models['faces'] = cv2.CascadeClassifier(self.path_cv2_models + 'haarcascade_frontalface_default.xml')
             self.models['eyes'] = cv2.CascadeClassifier(self.path_cv2_models + 'haarcascade_eye.xml')
             return self.__detect_and_draw_faces_and_eyes_better
+        elif option == 'dlib_68landmarks':
+            self.dlib_detector = dlib.get_frontal_face_detector()
+            self.dlib_predictor = dlib.shape_predictor(self.path_dlib_models + "shape_predictor_68_face_landmarks.dat")
+            return self.__detect_and_draw_dlib_landmarks
 
     def __detect_faces(self, gray_frame):
 
@@ -52,6 +61,10 @@ class ImageProcessor:
         # Draw rectangle around the faces
         for (x, y, w, h) in faces:
             cv2.rectangle(frame, (x, y), (x + w, y + h), (255, 0, 0), 2)
+
+    def __detect_and_draw_faces(self, frame, gray_frame):
+        faces = self.__detect_faces(gray_frame)
+        self.__draw_faces(faces, frame)
 
     def __detect_eyes(self, gray_frame):
         eyes = self.models['eyes'].detectMultiScale(
@@ -94,10 +107,37 @@ class ImageProcessor:
                     for (ex, ey, ew, eh) in eyes:
                         cv2.rectangle(roi_color, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
 
-                    eyes_centers = [(ex + ew//2, ey + eh//2) for (ex, ey, ew, eh) in eyes]
+                    eyes_centers = [(ex + ew // 2, ey + eh // 2) for (ex, ey, ew, eh) in eyes]
 
                     cv2.line(roi_color, (eyes_centers[0][0], eyes_centers[0][1]),
                              (eyes_centers[1][0], eyes_centers[1][1]), (66, 215, 244), 1)
+
+                    eyes_centers_as_points = [Point(x, y) for (x, y) in eyes_centers]
+
+                    middle_point_eyes = ((eyes_centers[0][0] + eyes_centers[1][0]) // 2,
+                                         (eyes_centers[0][1] + eyes_centers[1][1]) // 2)
+
+                    middle_point_eyes_as_point = Point(middle_point_eyes[0], middle_point_eyes[1])
+
+                    line_centering_eyes = Line(eyes_centers_as_points[0], eyes_centers_as_points[1])
+
+                    vertical_axis = line_centering_eyes.perpendicular(through=middle_point_eyes_as_point)
+
+    def __detect_and_draw_dlib_landmarks(self, frame, gray_frame):
+        faces = self.dlib_detector(gray_frame)
+        for face in faces:
+            x1 = face.left()
+            y1 = face.top()
+            x2 = face.right()
+            y2 = face.bottom()
+            # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 3)
+
+            landmarks = self.dlib_predictor(gray_frame, face)
+
+            for n in range(0, 68):
+                x = landmarks.part(n).x
+                y = landmarks.part(n).y
+                cv2.circle(frame, (x, y), 4, (255, 0, 0), -1)
 
     def process_image(self, image):
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)

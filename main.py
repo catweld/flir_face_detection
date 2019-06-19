@@ -3,7 +3,7 @@ from image_processing import ImageProcessor, StreamProcessor
 
 
 def main_webcam_stream():
-    image_processor = ImageProcessor(option='better_faces_and_eyes')
+    image_processor = ImageProcessor(option='dlib_68landmarks')
     stream_processor = StreamProcessor(image_processor, index_cam=0)
 
     stream_processor.run()
@@ -18,10 +18,9 @@ def main_flir_image_processor():
 
     # fie.plot()
 
-    fie.export_thermal_to_csv('thermals_csv/'+file_name+'_thermal_csv.csv')
+    # fie.export_thermal_to_csv('thermals_csv/'+file_name+'_thermal_csv.csv')
 
     fie.save_images()
-
 
 
 def main_flir_video_processor():
@@ -29,5 +28,5 @@ def main_flir_video_processor():
 
 
 if __name__ == '__main__':
-    # main_webcam_stream()
-    main_flir_image_processor()
+    main_webcam_stream()
+    # main_flir_image_processor()
