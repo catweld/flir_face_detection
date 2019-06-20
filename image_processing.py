@@ -20,6 +20,7 @@ class ImageProcessor:
         self.boundaries = None
         self.__reset_boundaries()
         self.orientation = None
+        self.all_regions = None
 
     def __select_processor(self, option):
         POSSIBLE_OPTIONS = ['faces', 'faces_and_eyes', 'better_faces_and_eyes', 'dlib_68landmarks']
@@ -146,18 +147,19 @@ class ImageProcessor:
             # Draw 2 circles.
             # One that passes through points 40 and 28, and with their distance as diameter
             # Another one that passas through 28 and 43, and with their distance as diameter
+
             # TODO: create a class representing boundaries
-            center_periorbital_left = ((landmarks.part(28).x + landmarks.part(40).x) // 2,
-                                       (landmarks.part(28).y + landmarks.part(40).y) // 2)
+            center_periorbital_left = ((landmarks.part(27).x + landmarks.part(39).x) // 2,
+                                       (landmarks.part(27).y + landmarks.part(39).y) // 2)
 
-            radius_periorbital_left = ceil(sqrt((landmarks.part(28).x - landmarks.part(40).x) ** 2
-                                                + (landmarks.part(28).y - landmarks.part(40).y) ** 2)) // 2
+            radius_periorbital_left = ceil(sqrt((landmarks.part(27).x - landmarks.part(39).x) ** 2
+                                                + (landmarks.part(27).y - landmarks.part(39).y) ** 2)) // 2
 
-            center_periorbital_right = ((landmarks.part(43).x + landmarks.part(28).x) // 2,
-                                        (landmarks.part(43).y + landmarks.part(28).y) // 2)
+            center_periorbital_right = ((landmarks.part(42).x + landmarks.part(27).x) // 2,
+                                        (landmarks.part(42).y + landmarks.part(27).y) // 2)
 
-            radius_periorbital_right = ceil(sqrt((landmarks.part(43).x - landmarks.part(28).x) ** 2
-                                                 + (landmarks.part(43).y - landmarks.part(28).y) ** 2)) // 2
+            radius_periorbital_right = ceil(sqrt((landmarks.part(42).x - landmarks.part(27).x) ** 2
+                                                 + (landmarks.part(42).y - landmarks.part(27).y) ** 2)) // 2
 
             cv2.circle(frame, (center_periorbital_left[0], center_periorbital_left[1]),
                        radius_periorbital_left, (255, 0, 0), lineType=8)
@@ -175,6 +177,7 @@ class ImageProcessor:
                                                    lineType=8))
 
     def process_image(self, image, save_boundaries=False):
+        self.all_regions = []
         if save_boundaries:
             self.__reset_boundaries()
 
@@ -193,7 +196,7 @@ class ImageProcessor:
         elif self.orientation == 'horizontal':
             calibration = {
                 'up_shift': -35,
-                'right_shift': 73,
+                'right_shift': 70,
             }
         else:
             raise ValueError('Orientation not valid.')
