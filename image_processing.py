@@ -19,6 +19,7 @@ class ImageProcessor:
         self.__processor = self.__select_processor(option)
         self.boundaries = None
         self.__reset_boundaries()
+        self.orientation = None
 
     def __select_processor(self, option):
         POSSIBLE_OPTIONS = ['faces', 'faces_and_eyes', 'better_faces_and_eyes', 'dlib_68landmarks']
@@ -177,16 +178,25 @@ class ImageProcessor:
         if save_boundaries:
             self.__reset_boundaries()
 
+        self.orientation = 'vertical' if image.shape[0] > image.shape[1] else 'horizontal'
+
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         self.__processor(image, gray, save_boundaries)
 
     def apply_saved_boundaries(self, image):
-        calibration = {
-            'up_shift': 32,
-            'right_shift': -14,
-            'scale': 1.0
-        }
-
+        # Calibration for a vertical image
+        if self.orientation == 'vertical':
+            calibration = {
+                'up_shift': 32,
+                'right_shift': -14,
+            }
+        elif self.orientation == 'horizontal':
+            calibration = {
+                'up_shift': -35,
+                'right_shift': 73,
+            }
+        else:
+            raise ValueError('Orientation not valid.')
         # Add rectangles
         # TODO
 
