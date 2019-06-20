@@ -5,11 +5,7 @@ from geometer import *
 import dlib
 from math import sqrt, ceil
 
-# this is just to unconfuse pycharm
-try:
-    from cv2 import cv2
-except ImportError:
-    pass
+import cv2.cv2 as cv2
 
 
 class ImageProcessor:
@@ -21,7 +17,8 @@ class ImageProcessor:
         self.path_cv2_models = os.getcwd() + '\\flir_env\\Lib\\site-packages\\cv2\\data\\' if path_cv2_models is None else path_cv2_models
         self.path_dlib_models = os.getcwd() + '\\dlib_models\\' if path_dlib_models is None else path_dlib_models
         self.__processor = self.__select_processor(option)
-        self.drawings = {'rectangle': [], 'line': [], 'circle': []}
+        self.boundaries = None
+        self.__reset_boundaries()
 
     def __select_processor(self, option):
         POSSIBLE_OPTIONS = ['faces', 'faces_and_eyes', 'better_faces_and_eyes', 'dlib_68landmarks']
@@ -81,14 +78,14 @@ class ImageProcessor:
         for (ex, ey, ew, eh) in eyes:
             cv2.rectangle(frame, (ex, ey), (ex + ew, ey + eh), (0, 255, 0), 2)
 
-    def __detect_and_draw_faces_and_eyes(self, frame, gray_frame):
+    def __detect_and_draw_faces_and_eyes(self, frame, gray_frame, save_boundaries):
         faces = self.__detect_faces(gray_frame)
         self.__draw_faces(faces, frame)
 
         eyes = self.__detect_eyes(gray_frame)
         self.__draw_eyes(eyes, frame)
 
-    def __detect_and_draw_faces_and_eyes_better(self, frame, gray_frame):
+    def __detect_and_draw_faces_and_eyes_better(self, frame, gray_frame, save_boundaries):
         faces = self.__detect_faces(gray_frame)
         # self.__draw_faces(faces, frame)
 
@@ -124,7 +121,7 @@ class ImageProcessor:
 
                     vertical_axis = line_centering_eyes.perpendicular(through=middle_point_eyes_as_point)
 
-    def __detect_and_draw_dlib_landmarks(self, frame, gray_frame):
+    def __detect_and_draw_dlib_landmarks(self, frame, gray_frame, save_boundaries):
         faces = self.dlib_detector(gray_frame)
         for face in faces:
             x1 = face.left()
@@ -138,33 +135,75 @@ class ImageProcessor:
             for n in range(0, 68):
                 x = landmarks.part(n).x
                 y = landmarks.part(n).y
-                # cv2.circle(frame, (x, y), 4, (255, 0, 0), -1)
+                cv2.circle(frame, (x, y), 4, (255, 0, 0), -1)
+                self.boundaries['circles'].append(
+                    dict(center=(x, y),
+                         radius=4,
+                         color=(255, 0, 0),
+                         lineType=-1))
 
             # Draw 2 circles.
             # One that passes through points 40 and 28, and with their distance as diameter
             # Another one that passas through 28 and 43, and with their distance as diameter
-            # TODO: create a class representing landmarks
-            center_periorbital_left = ((landmarks.part(28).x + landmarks.part(40).x)//2,
-                                       (landmarks.part(28).y + landmarks.part(40).y)//2)
+            # TODO: create a class representing boundaries
+            center_periorbital_left = ((landmarks.part(28).x + landmarks.part(40).x) // 2,
+                                       (landmarks.part(28).y + landmarks.part(40).y) // 2)
 
             radius_periorbital_left = ceil(sqrt((landmarks.part(28).x - landmarks.part(40).x) ** 2
-                                           + (landmarks.part(28).y - landmarks.part(40).y) ** 2))//2
+                                                + (landmarks.part(28).y - landmarks.part(40).y) ** 2)) // 2
 
-            center_periorbital_right = ((landmarks.part(43).x + landmarks.part(28).x)//2,
-                                       (landmarks.part(43).y + landmarks.part(28).y)//2)
+            center_periorbital_right = ((landmarks.part(43).x + landmarks.part(28).x) // 2,
+                                        (landmarks.part(43).y + landmarks.part(28).y) // 2)
 
             radius_periorbital_right = ceil(sqrt((landmarks.part(43).x - landmarks.part(28).x) ** 2
-                                            + (landmarks.part(43).y - landmarks.part(28).y) ** 2))//2
+                                                 + (landmarks.part(43).y - landmarks.part(28).y) ** 2)) // 2
 
             cv2.circle(frame, (center_periorbital_left[0], center_periorbital_left[1]),
                        radius_periorbital_left, (255, 0, 0), lineType=8)
 
+            self.boundaries['circles'].append(dict(center=(center_periorbital_left[0], center_periorbital_left[1]),
+                                                   radius=radius_periorbital_left,
+                                                   color=(255, 0, 0),
+                                                   lineType=8))
             cv2.circle(frame, (center_periorbital_right[0], center_periorbital_right[1]),
                        radius_periorbital_right, (255, 0, 0), lineType=8)
 
-    def process_image(self, image):
+            self.boundaries['circles'].append(dict(center=(center_periorbital_right[0], center_periorbital_right[1]),
+                                                   radius=radius_periorbital_right,
+                                                   color=(255, 0, 0),
+                                                   lineType=8))
+
+    def process_image(self, image, save_boundaries=False):
+        if save_boundaries:
+            self.__reset_boundaries()
+
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        self.__processor(image, gray)
+        self.__processor(image, gray, save_boundaries)
+
+    def apply_saved_boundaries(self, image):
+        calibration = {
+            'up_shift': 32,
+            'right_shift': -14,
+            'scale': 1.0
+        }
+
+        # Add rectangles
+        # TODO
+
+        # Add lines
+        # TODO
+
+        # Add circles
+        for circle in self.boundaries['circles']:
+            real_circle_center = (
+                circle['center'][0] + calibration['right_shift'],
+                circle['center'][1] - calibration['up_shift']
+            )
+            cv2.circle(image, center=real_circle_center, radius=circle['radius'], color=circle['color'],
+                       lineType=circle['lineType'])
+
+    def __reset_boundaries(self):
+        self.boundaries = {'rectangles': [], 'lines': [], 'circles': [], 'ellipses': []}
 
 
 class StreamProcessor:

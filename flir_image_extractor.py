@@ -15,6 +15,7 @@ from PIL import Image
 from math import sqrt, exp, log
 from matplotlib import cm
 from matplotlib import pyplot as plt
+import cv2.cv2 as cv2
 
 import numpy as np
 
@@ -38,8 +39,13 @@ class FlirImageExtractor:
 
         self.rgb_image_np = None
         self.thermal_image_np = None
+        self.img_thermal_rgb = None
 
-    def process_image(self, flir_img_filename, upsample_thermal=False):
+        # These values refer to the rgb image
+        self.height = None
+        self.width = None
+
+    def process_image(self, flir_img_filename, upsample_thermal=False, transform_rgb=False):
         """
         Given a valid image path, process the file: extract real thermal values
         and a thumbnail for comparison (generally thumbnail is on the visible spectre)
@@ -60,10 +66,35 @@ class FlirImageExtractor:
             self.fix_endian = False
 
         self.rgb_image_np = self.extract_embedded_image()
+        self.height, self.width = self.rgb_image_np.shape[:2]
         self.thermal_image_np = self.extract_thermal_image()
 
         if upsample_thermal:
             self.thermal_image_np = resize(self.thermal_image_np, self.rgb_image_np.shape[:2])
+
+        thermal_np = self.thermal_image_np
+        thermal_normalized = (thermal_np - np.amin(thermal_np)) / (np.amax(thermal_np) - np.amin(thermal_np))
+        self.img_thermal_rgb = np.uint8(cm.inferno(thermal_normalized)[:, :, :3] * 255)
+
+        # Transform rgb image
+        # From https://docs.opencv.org/trunk/da/d6e/tutorial_py_geometric_transformations.html
+        # cv2.imshow("RGB image before rescale", self.rgb_image_np)
+        # cv2.waitKey(0)
+        scale = 0.81
+        x_shift = 0
+        y_shift = 37
+        new_height = round(self.height * scale)
+        new_width = round(self.width * scale)
+        x_start = (self.width - new_width) // 2
+        x_end = self.width - x_start
+        y_start = (self.height - new_height) // 2
+        y_end = self.height - y_start
+        pts1 = np.float32([[x_shift + x_start, y_shift + y_start], [x_shift + x_end, y_shift + y_start],
+                           [x_shift + x_start, y_shift + y_end], [x_shift + x_end, y_shift + y_end]])
+        pts2 = np.float32([[0, 0], [self.width, 0], [0, self.height], [self.width, self.height]])
+
+        M = cv2.getPerspectiveTransform(pts1, pts2)
+        self.rgb_image_np = cv2.warpPerspective(self.rgb_image_np, M, (self.width, self.height))
 
     def get_image_type(self):
         """

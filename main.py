@@ -1,6 +1,8 @@
 from flir_image_extractor import FlirImageExtractor
 from image_processing import ImageProcessor, StreamProcessor
 
+import cv2.cv2 as cv2
+
 
 def main_webcam_stream():
     image_processor = ImageProcessor(option='dlib_68landmarks')
@@ -10,19 +12,39 @@ def main_webcam_stream():
 
 
 def main_flir_image_processor():
-    input_file = 'test_images/flir_20190618T092717.jpg'
+    """
+    test filenames
+    flir_20190617T163823.jpg
+    flir_20190618T092717.jpg
+    flir_20190618T143825.jpg
+    flir_20190619T161841.jpg
+    flir_20190619T161856.jpg
+    flir_20190619T161858.jpg
+    """
+    input_file = 'test_images/flir_20190619T161858.jpg'
     file_name = input_file.split('/')[1].split('.')[0]
 
     fie = FlirImageExtractor()
-    fie.process_image(input_file, upsample_thermal=True)
+    fie.process_image(input_file, upsample_thermal=True, transform_rgb=True)
 
     # fie.plot()
 
     rgb_image = fie.get_rgb_np()
+    rgb_image = cv2.cvtColor(rgb_image, cv2.COLOR_BGR2RGB)
+    thermal_image_3d = fie.img_thermal_rgb
+    thermal_image_3d = cv2.cvtColor(thermal_image_3d, cv2.COLOR_BGR2RGB)
 
     # Creating region boundaries
-    # image_processor = ImageProcessor(option='dlib_68landmarks')
-    # image_processor.process_image()
+    image_processor = ImageProcessor(option='dlib_68landmarks')
+    image_processor.process_image(rgb_image)
+
+    cv2.imshow("RGB image with boundaries", rgb_image)
+    # cv2.waitKey(0)
+
+    image_processor.apply_saved_boundaries(thermal_image_3d)
+
+    cv2.imshow("Thermal image with boundaries", thermal_image_3d)
+    cv2.waitKey(0)
 
     # fie.export_thermal_to_csv('thermals_csv/'+file_name+'_thermal_csv.csv')
 
