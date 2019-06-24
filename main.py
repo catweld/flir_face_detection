@@ -21,6 +21,7 @@ def main_flir_image_processor():
     flir_20190619T161856.jpg
     flir_20190619T161858.jpg
     flir_20190620T113530.jpg (horizontal)
+    flir_20190620T113555.jpg (horizontal)
     """
     input_file = 'test_images/flir_20190620T113530.jpg'
     file_name = input_file.split('/')[1].split('.')[0]
@@ -57,5 +58,5 @@ def main_flir_video_processor():
 
 
 if __name__ == '__main__':
-    # main_webcam_stream()
-    main_flir_image_processor()
+    main_webcam_stream()
+    # main_flir_image_processor()
