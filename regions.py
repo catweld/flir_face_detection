@@ -1,7 +1,8 @@
 import cv2.cv2 as cv2
 
 from math import ceil, sqrt
-
+import numpy as np
+import matplotlib.pyplot as plt
 
 class StaticBoundariesDetectors:
 
@@ -61,11 +62,25 @@ class FaceRegion:
 
         self.detector = detector_method
 
-    def detect_region(self, landmarks):
+        self.region_mask = None
+        self.region_points = None
+
+    def detect_region(self, image, landmarks):
         self.boundaries = self.detector(landmarks)
+        # Code from https://stackoverflow.com/questions/14083256/retrieve-circle-points
+        mask = np.zeros(image.shape[:2], dtype="uint8")
+
+        for boundary in self.boundaries:
+            boundary.apply_to_image(mask, filled=True)
+
+        self.region_mask = mask
+        self.region_points = np.transpose(np.where(mask == 255))
 
     def get_mean_std_temperature(self, thermal_image):
-        pass
+        plt.imshow(self.region_mask)
+        plt.show()
+        mean, std = cv2.meanStdDev(thermal_image, mask=self.region_mask)
+        return mean.item(), std.item()
 
 
 class BoundaryOpenCV:
@@ -88,12 +103,12 @@ class BoundaryOpenCV:
         elif shape_type == 'rectangle':
             self.__draw_shape = self.__draw_rectangle
 
-    def apply_to_image(self, image):
+    def apply_to_image(self, image, filled=False, translation=(0, 0)):
         """
         Draws the shape on the image.
         :param image: RGB image as numpy array
         """
-        self.__draw_shape(image)
+        self.__draw_shape(image, filled, translation)
 
     def __draw_line(self, image):
         params = self.dict_parameters
@@ -105,13 +120,22 @@ class BoundaryOpenCV:
                  lineType=params.get('lineType') or 8,
                  shift=params.get('shift') or 0)
 
-    def __draw_circle(self, image):
+    def __draw_circle(self, image, filled, translation):
         params = self.dict_parameters
         keys = params.keys()
         assert all(key in keys for key in ['center', 'radius', 'color'])
 
-        cv2.circle(image, center=params['center'], radius=params['radius'], color=params['color'],
-                   thickness=params.get('thickness') or 1,
+        if filled:
+            color = 255
+            thickness = -1
+        else:
+            color = params['color']
+            thickness = params.get('thickness') or 1
+
+        center = (params['center'][0] + translation[0], params['center'][1] + translation[1])
+
+        cv2.circle(image, center=center, radius=params['radius'], color=color,
+                   thickness=thickness,
                    lineType=params.get('lineType') or 8,
                    shift=params.get('shift') or 0)
 

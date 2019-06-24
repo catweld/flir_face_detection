@@ -1,8 +1,7 @@
 import sys
 import os
-from geometer import *
 import dlib
-
+from geometer import Point, Line
 import cv2.cv2 as cv2
 from regions import StaticBoundariesDetectors, BoundaryOpenCV, FaceRegion
 
@@ -149,8 +148,8 @@ class ImageProcessor:
             # Another one that passas through 28 and 43, and with their distance as diameter
 
             periorbital_region = FaceRegion('Periorbital region', StaticBoundariesDetectors.periorbital_boundaries)
-            periorbital_region.detect_region(landmarks)
-
+            periorbital_region.detect_region(frame, landmarks)
+            self.all_regions.append(periorbital_region)
             self.__add_boundaries(periorbital_region.boundaries)
 
             for circle in self.boundaries['circle']:
@@ -187,19 +186,15 @@ class ImageProcessor:
         # TODO
 
         # Add circles
-        for circle in self.boundaries['circles']:
-            real_circle_center = (
-                circle['center'][0] + calibration['right_shift'],
-                circle['center'][1] - calibration['up_shift']
-            )
-            cv2.circle(image, center=real_circle_center, radius=circle['radius'], color=circle['color'],
-                       lineType=circle['lineType'])
+        for circle in self.boundaries['circle']:
+            circle.apply_to_image(image,
+                                  translation=(calibration['right_shift'], - calibration['up_shift']))
+
 
     def __reset_boundaries(self):
         self.boundaries = {'rectangle': [], 'line': [], 'circle': [], 'ellipse': []}
 
     def __add_boundaries(self, boundaries):
-
         for boundary in boundaries:
             self.boundaries[boundary.shape_type].append(boundary)
 

@@ -24,7 +24,6 @@ def main_flir_image_processor():
     flir_20190620T113555.jpg (horizontal)
     """
     input_file = 'test_images/flir_20190620T113530.jpg'
-    file_name = input_file.split('/')[1].split('.')[0]
 
     fie = FlirImageExtractor()
     fie.process_image(input_file, upsample_thermal=True, transform_rgb=True)
@@ -48,6 +47,13 @@ def main_flir_image_processor():
     cv2.imshow("Thermal image with boundaries", thermal_image_3d)
     cv2.waitKey(0)
 
+    thermal_image_raw = fie.get_thermal_np()
+    regions = image_processor.all_regions
+    print('Region\tMean T\tStd T')
+
+    for region in regions:
+        mean, std = region.get_mean_std_temperature(thermal_image_raw)
+        print('{}\t{}\t{}'.format(region.name, mean, std))
     # fie.export_thermal_to_csv('thermals_csv/'+file_name+'_thermal_csv.csv')
 
     fie.save_images()
@@ -58,5 +64,5 @@ def main_flir_video_processor():
 
 
 if __name__ == '__main__':
-    main_webcam_stream()
-    # main_flir_image_processor()
+    # main_webcam_stream()
+    main_flir_image_processor()
