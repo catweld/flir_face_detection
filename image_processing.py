@@ -143,17 +143,20 @@ class ImageProcessor:
                                        color=(255, 0, 0),
                                        thickness=-1)))
 
-            # Draw 2 circles.
-            # One that passes through points 40 and 28, and with their distance as diameter
-            # Another one that passas through 28 and 43, and with their distance as diameter
-
+            # Detection and drawing of the regions
             periorbital_region = FaceRegion('Periorbital region', StaticContoursDetectors.periorbital_contours)
             periorbital_region.detect_region(frame, landmarks)
             self.all_regions.append(periorbital_region)
             self.__add_contours(periorbital_region.contours)
 
-            for circle in self.contours['circle']:
-                circle.apply_to_image(frame)
+            forehead_region = FaceRegion('Forehead region', StaticContoursDetectors.forehead_contours)
+            forehead_region.detect_region(frame, landmarks)
+            self.all_regions.append(forehead_region)
+            self.__add_contours(forehead_region.contours)
+
+            for contour_type in self.contours.keys():
+                for contour in self.contours[contour_type]:
+                    contour.apply_to_image(frame)
 
     def process_image(self, image):
         self.all_regions = []
@@ -179,19 +182,17 @@ class ImageProcessor:
         else:
             raise ValueError('Orientation not valid.')
 
-        # Add rectangles
-        # TODO
+        for contour_type in self.contours.keys():
+            for contour in self.contours[contour_type]:
+                contour.apply_to_image(image, translation=(calibration['right_shift'], - calibration['up_shift']))
 
-        # Add lines
-        # TODO
-
-        # Add circles
-        for circle in self.contours['circle']:
-            circle.apply_to_image(image,
-                                  translation=(calibration['right_shift'], - calibration['up_shift']))
+        # # Add circles
+        # for circle in self.contours['circle']:
+        #     circle.apply_to_image(image,
+        #                           translation=(calibration['right_shift'], - calibration['up_shift']))
 
     def __reset_contours(self):
-        self.contours = {'rectangle': [], 'line': [], 'circle': [], 'ellipse': []}
+        self.contours = {'rectangle': [], 'line': [], 'circle': [], 'ellipse': [], 'poly': []}
 
     def __add_contours(self, contours):
         for contour in contours:

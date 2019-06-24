@@ -6,9 +6,16 @@ import matplotlib.pyplot as plt
 
 
 class StaticContoursDetectors:
+    # TODO: create constants for landmarks
 
     @staticmethod
     def periorbital_contours(landmarks):
+        """
+        Draw 2 circles based on the facial landmarks.
+        One that passes through points 40 and 28, and with their distance as diameter
+        Another one that passes through 28 and 43, and with their distance as diameter
+        """
+
         center_periorbital_left = ((landmarks.part(27).x + landmarks.part(39).x) // 2,
                                    (landmarks.part(27).y + landmarks.part(39).y) // 2)
 
@@ -44,7 +51,29 @@ class StaticContoursDetectors:
 
     @staticmethod
     def forehead_contours(landmarks):
-        pass
+        """
+        Draw a polygon with 4 vertices using landmarks 21 and 24.
+        """
+
+        left_i = 20
+        right_i = 23
+        down_left = (landmarks.part(left_i).x, landmarks.part(left_i).y)
+        down_right = (landmarks.part(right_i).x, landmarks.part(right_i).y)
+
+        width = ceil(sqrt((down_right[0] - down_left[0]) ** 2
+                          + (down_right[1] - down_left[1]) ** 2))
+
+        width_over_height = 1.6
+        height = int(width // width_over_height)
+
+        up_left = (down_left[0], down_left[1] - height)
+        up_right = (down_right[0], down_right[1] - height)
+
+        forehead = ContourOpenCV('poly',
+                                 dict(pts=np.array([down_left, up_left, up_right, down_right], dtype='int32'),
+                                      color=(255, 0, 0),
+                                      lineType=8))
+        return [forehead]
 
     @staticmethod
     def maxillary_contours(landmarks):
@@ -85,7 +114,7 @@ class FaceRegion:
 
 
 class ContourOpenCV:
-    SHAPE_TYPES = ['line', 'circle', 'ellipse', 'rectangle']
+    SHAPE_TYPES = ['line', 'circle', 'ellipse', 'rectangle', 'poly']
 
     def __init__(self, shape_type, dict_parameters):
         if shape_type not in ContourOpenCV.SHAPE_TYPES:
@@ -103,6 +132,8 @@ class ContourOpenCV:
             self.__draw_shape = self.__draw_ellipse
         elif shape_type == 'rectangle':
             self.__draw_shape = self.__draw_rectangle
+        elif shape_type == 'poly':
+            self.__draw_shape = self.__draw_poly
 
     def apply_to_image(self, image, filled=False, translation=(0, 0)):
         """
@@ -162,3 +193,20 @@ class ContourOpenCV:
                       thickness=params.get('thickness') or 1,
                       lineType=params.get('lineType') or 8,
                       shift=params.get('shift') or 0)
+
+    def __draw_poly(self, image, filled, translation):
+        params = self.dict_parameters
+        keys = params.keys()
+
+        assert all(key in keys for key in ['pts', 'color'])
+        if filled:
+            cv2.fillPoly(image, pts=[params['pts']], color=255,
+                         lineType=params.get('lineType') or 8,
+                         shift=params.get('shift') or 0,
+                         offset=params.get('offset') or translation)
+        else:
+            cv2.polylines(image, pts=[params['pts'] + translation], isClosed=True,
+                          color=params['color'],
+                          thickness=params.get('thickness') or 1,
+                          lineType=params.get('lineType') or 8,
+                          shift=params.get('shift') or 0)
