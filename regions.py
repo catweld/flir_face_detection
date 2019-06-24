@@ -4,10 +4,11 @@ from math import ceil, sqrt
 import numpy as np
 import matplotlib.pyplot as plt
 
-class StaticBoundariesDetectors:
+
+class StaticContoursDetectors:
 
     @staticmethod
-    def periorbital_boundaries(landmarks):
+    def periorbital_contours(landmarks):
         center_periorbital_left = ((landmarks.part(27).x + landmarks.part(39).x) // 2,
                                    (landmarks.part(27).y + landmarks.part(39).y) // 2)
 
@@ -20,33 +21,33 @@ class StaticBoundariesDetectors:
         radius_periorbital_right = ceil(sqrt((landmarks.part(42).x - landmarks.part(27).x) ** 2
                                              + (landmarks.part(42).y - landmarks.part(27).y) ** 2)) // 2
 
-        periorbital_left = BoundaryOpenCV('circle',
-                                          dict(center=(center_periorbital_left[0], center_periorbital_left[1]),
-                                               radius=radius_periorbital_left,
+        periorbital_left = ContourOpenCV('circle',
+                                         dict(center=(center_periorbital_left[0], center_periorbital_left[1]),
+                                              radius=radius_periorbital_left,
+                                              color=(255, 0, 0),
+                                              lineType=8))
+        periorbital_right = ContourOpenCV('circle',
+                                          dict(center=(center_periorbital_right[0], center_periorbital_right[1]),
+                                               radius=radius_periorbital_right,
                                                color=(255, 0, 0),
                                                lineType=8))
-        periorbital_right = BoundaryOpenCV('circle',
-                                           dict(center=(center_periorbital_right[0], center_periorbital_right[1]),
-                                                radius=radius_periorbital_right,
-                                                color=(255, 0, 0),
-                                                lineType=8))
 
         return [periorbital_left, periorbital_right]
 
     @staticmethod
-    def nose_boundaries(landmarks):
+    def nose_contours(landmarks):
         pass
 
     @staticmethod
-    def supraorbital_boundaries(landmarks):
+    def supraorbital_contours(landmarks):
         pass
 
     @staticmethod
-    def forehead_boundaries(landmarks):
+    def forehead_contours(landmarks):
         pass
 
     @staticmethod
-    def maxillary_boundaries(landmarks):
+    def maxillary_contours(landmarks):
         pass
 
 
@@ -58,7 +59,7 @@ class FaceRegion:
         FaceRegion.index += 1
         self.name = name
 
-        self.boundaries = None
+        self.contours = None
 
         self.detector = detector_method
 
@@ -66,12 +67,12 @@ class FaceRegion:
         self.region_points = None
 
     def detect_region(self, image, landmarks):
-        self.boundaries = self.detector(landmarks)
+        self.contours = self.detector(landmarks)
         # Code from https://stackoverflow.com/questions/14083256/retrieve-circle-points
         mask = np.zeros(image.shape[:2], dtype="uint8")
 
-        for boundary in self.boundaries:
-            boundary.apply_to_image(mask, filled=True)
+        for contour in self.contours:
+            contour.apply_to_image(mask, filled=True)
 
         self.region_mask = mask
         self.region_points = np.transpose(np.where(mask == 255))
@@ -83,11 +84,11 @@ class FaceRegion:
         return mean.item(), std.item()
 
 
-class BoundaryOpenCV:
+class ContourOpenCV:
     SHAPE_TYPES = ['line', 'circle', 'ellipse', 'rectangle']
 
     def __init__(self, shape_type, dict_parameters):
-        if shape_type not in BoundaryOpenCV.SHAPE_TYPES:
+        if shape_type not in ContourOpenCV.SHAPE_TYPES:
             raise ValueError('Incorrect type shape: {}'.format(shape_type))
 
         self.shape_type = shape_type

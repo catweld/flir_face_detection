@@ -3,7 +3,7 @@ import os
 import dlib
 from geometer import Point, Line
 import cv2.cv2 as cv2
-from regions import StaticBoundariesDetectors, BoundaryOpenCV, FaceRegion
+from regions import StaticContoursDetectors, ContourOpenCV, FaceRegion
 
 
 class ImageProcessor:
@@ -15,8 +15,8 @@ class ImageProcessor:
         self.path_cv2_models = os.getcwd() + '\\flir_env\\Lib\\site-packages\\cv2\\data\\' if path_cv2_models is None else path_cv2_models
         self.path_dlib_models = os.getcwd() + '\\dlib_models\\' if path_dlib_models is None else path_dlib_models
         self.__processor = self.__select_processor(option)
-        self.boundaries = None
-        self.__reset_boundaries()
+        self.contours = None
+        self.__reset_contours()
         self.orientation = None
         self.all_regions = None
 
@@ -136,35 +136,35 @@ class ImageProcessor:
                 x = landmarks.part(n).x
                 y = landmarks.part(n).y
                 # cv2.circle(frame, (x, y), 4, (255, 0, 0), -1)
-                self.boundaries['circle'].append(
-                    BoundaryOpenCV('circle',
-                                   dict(center=(x, y),
-                                        radius=4,
-                                        color=(255, 0, 0),
-                                        thickness=-1)))
+                self.contours['circle'].append(
+                    ContourOpenCV('circle',
+                                  dict(center=(x, y),
+                                       radius=4,
+                                       color=(255, 0, 0),
+                                       thickness=-1)))
 
             # Draw 2 circles.
             # One that passes through points 40 and 28, and with their distance as diameter
             # Another one that passas through 28 and 43, and with their distance as diameter
 
-            periorbital_region = FaceRegion('Periorbital region', StaticBoundariesDetectors.periorbital_boundaries)
+            periorbital_region = FaceRegion('Periorbital region', StaticContoursDetectors.periorbital_contours)
             periorbital_region.detect_region(frame, landmarks)
             self.all_regions.append(periorbital_region)
-            self.__add_boundaries(periorbital_region.boundaries)
+            self.__add_contours(periorbital_region.contours)
 
-            for circle in self.boundaries['circle']:
+            for circle in self.contours['circle']:
                 circle.apply_to_image(frame)
 
     def process_image(self, image):
         self.all_regions = []
-        self.__reset_boundaries()
+        self.__reset_contours()
 
         self.orientation = 'vertical' if image.shape[0] > image.shape[1] else 'horizontal'
 
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         self.__processor(image, gray)
 
-    def apply_saved_boundaries(self, image):
+    def apply_saved_contours(self, image):
         # Calibration for a vertical image
         if self.orientation == 'vertical':
             calibration = {
@@ -186,17 +186,16 @@ class ImageProcessor:
         # TODO
 
         # Add circles
-        for circle in self.boundaries['circle']:
+        for circle in self.contours['circle']:
             circle.apply_to_image(image,
                                   translation=(calibration['right_shift'], - calibration['up_shift']))
 
+    def __reset_contours(self):
+        self.contours = {'rectangle': [], 'line': [], 'circle': [], 'ellipse': []}
 
-    def __reset_boundaries(self):
-        self.boundaries = {'rectangle': [], 'line': [], 'circle': [], 'ellipse': []}
-
-    def __add_boundaries(self, boundaries):
-        for boundary in boundaries:
-            self.boundaries[boundary.shape_type].append(boundary)
+    def __add_contours(self, contours):
+        for contour in contours:
+            self.contours[contour.shape_type].append(contour)
 
 
 class StreamProcessor:

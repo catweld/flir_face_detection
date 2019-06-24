@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+# Code based on https://github.com/Nervengift/read_thermal.py/blob/master/flir_image_extractor.py
+
 from __future__ import print_function
 
 import argparse

@@ -23,7 +23,7 @@ def main_flir_image_processor():
     flir_20190620T113530.jpg (horizontal)
     flir_20190620T113555.jpg (horizontal)
     """
-    input_file = 'test_images/flir_20190620T113530.jpg'
+    input_file = 'test_images/flir_20190619T161856.jpg'
 
     fie = FlirImageExtractor()
     fie.process_image(input_file, upsample_thermal=True, transform_rgb=True)
@@ -39,12 +39,12 @@ def main_flir_image_processor():
     image_processor = ImageProcessor(option='dlib_68landmarks')
     image_processor.process_image(rgb_image)
 
-    cv2.imshow("RGB image with boundaries", rgb_image)
+    cv2.imshow("RGB image with contours", rgb_image)
     # cv2.waitKey(0)
 
-    image_processor.apply_saved_boundaries(thermal_image_3d)
+    image_processor.apply_saved_contours(thermal_image_3d)
 
-    cv2.imshow("Thermal image with boundaries", thermal_image_3d)
+    cv2.imshow("Thermal image with contours", thermal_image_3d)
     cv2.waitKey(0)
 
     thermal_image_raw = fie.get_thermal_np()
@@ -64,5 +64,5 @@ def main_flir_video_processor():
 
 
 if __name__ == '__main__':
-    # main_webcam_stream()
-    main_flir_image_processor()
+    main_webcam_stream()
+    # main_flir_image_processor()
