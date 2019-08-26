@@ -54,6 +54,7 @@ class StaticContoursDetectors:
         """
         Draw a polygon with 4 vertices using landmarks 21 and 24.
         """
+        # Maybe use an ellipse instead?
 
         left_i = 20
         right_i = 23

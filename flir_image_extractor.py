@@ -3,8 +3,6 @@
 
 # Code based on https://github.com/Nervengift/read_thermal.py/blob/master/flir_image_extractor.py
 
-from __future__ import print_function
-
 import argparse
 import io
 import json
@@ -51,7 +49,10 @@ class FlirImageExtractor:
         """
         Given a valid image path, process the file: extract real thermal values
         and a thumbnail for comparison (generally thumbnail is on the visible spectre)
-        :param flir_img_filename:
+
+        Parameters:
+            flir_img_filename: path of the rgb+thermal image.
+            upsample_thermal: resize the thermal image
         :return:
         """
         if self.is_debug:
@@ -82,21 +83,48 @@ class FlirImageExtractor:
         # From https://docs.opencv.org/trunk/da/d6e/tutorial_py_geometric_transformations.html
         # cv2.imshow("RGB image before rescale", self.rgb_image_np)
         # cv2.waitKey(0)
-        scale = 0.81
-        x_shift = 0
-        y_shift = 37
-        new_height = round(self.height * scale)
-        new_width = round(self.width * scale)
-        x_start = (self.width - new_width) // 2
-        x_end = self.width - x_start
-        y_start = (self.height - new_height) // 2
-        y_end = self.height - y_start
-        pts1 = np.float32([[x_shift + x_start, y_shift + y_start], [x_shift + x_end, y_shift + y_start],
-                           [x_shift + x_start, y_shift + y_end], [x_shift + x_end, y_shift + y_end]])
-        pts2 = np.float32([[0, 0], [self.width, 0], [0, self.height], [self.width, self.height]])
 
-        M = cv2.getPerspectiveTransform(pts1, pts2)
-        self.rgb_image_np = cv2.warpPerspective(self.rgb_image_np, M, (self.width, self.height))
+        if transform_rgb:
+            scale = 0.81
+            x_shift = 0
+            y_shift = 37
+            new_height = round(self.height * scale)
+            new_width = round(self.width * scale)
+            x_start = (self.width - new_width) // 2
+            x_end = self.width - x_start
+            y_start = (self.height - new_height) // 2
+            y_end = self.height - y_start
+            pts1 = np.float32([[x_shift + x_start, y_shift + y_start], [x_shift + x_end, y_shift + y_start],
+                               [x_shift + x_start, y_shift + y_end], [x_shift + x_end, y_shift + y_end]])
+            pts2 = np.float32([[0, 0], [self.width, 0], [0, self.height], [self.width, self.height]])
+
+            M = cv2.getPerspectiveTransform(pts1, pts2)
+            self.rgb_image_np = cv2.warpPerspective(self.rgb_image_np, M, (self.width, self.height))
+
+            # Attempt rotation for horizontal images
+            (h, w) = self.img_thermal_rgb.shape[:2]
+            if h < w:
+                center = (w / 2, h / 2)
+                angle90 = 90
+                scale = 1.0
+                M = cv2.getRotationMatrix2D(center, angle90, scale)
+                self.img_thermal_rgb = cv2.warpAffine(self.img_thermal_rgb, M, (h, w))
+
+            (h, w) = self.rgb_image_np.shape[:2]
+            if h < w:
+                center = (w / 2, h / 2)
+                angle90 = 90
+                scale = 1.0
+                M = cv2.getRotationMatrix2D(center, angle90, scale)
+                self.rgb_image_np = cv2.warpAffine(self.rgb_image_np, M, (h, w))
+
+            (h, w) = self.thermal_image_np.shape[:2]
+            if h < w:
+                center = (w / 2, h / 2)
+                angle90 = 90
+                scale = 1.0
+                M = cv2.getRotationMatrix2D(center, angle90, scale)
+                self.thermal_image_np = cv2.warpAffine(self.thermal_image_np, M, (h, w))
 
     def get_image_type(self):
         """

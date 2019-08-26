@@ -1,8 +1,4 @@
-flir_env
 .idea
+.gitignore
 __pycache__
-facenet
-dlib_models
-test_images
-test_videos
-thermals_csv
+flir_env

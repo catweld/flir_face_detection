@@ -8,7 +8,11 @@ from regions import StaticContoursDetectors, ContourOpenCV, FaceRegion
 
 class ImageProcessor:
     def __init__(self, option='faces', path_cv2_models=None, path_dlib_models=None):
-
+        """
+        :param option:
+        :param path_cv2_models:
+        :param path_dlib_models:
+        """
         self.models = {}
         self.dlib_detector = None
         self.dlib_predictor = None
