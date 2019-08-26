@@ -22,8 +22,12 @@ By running the different main methods, you can do three things:
 and compute mean and std of temperatures.
 3) Live stream from a Flir One Pro Camera recording with this app https://gits-15.sys.kth.se/SoRoKTH/FLIRONEExampleApplication
 
-####About 1 and 2
+#####About 1 and 2
 You can add the detection of new contours based on landmarks by adding a new method in the class `StaticContoursDetectors` in `regions.py`
 
 Since the contours are defined with the landmarks, 
 this code can easily be modified to use other models for the landmarks detection, for example OpenFace.
+Dlib (landmarking) and OpenCV2 (other detections) are currently used as models.
+
+#####About 3
+The computer on which the script is running and the Flir device must be connected at the same WiFi network.
