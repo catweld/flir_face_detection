@@ -9,9 +9,10 @@ from regions import StaticContoursDetectors, ContourOpenCV, FaceRegion
 class ImageProcessor:
     def __init__(self, option='faces', path_cv2_models=None, path_dlib_models=None):
         """
-        :param option:
-        :param path_cv2_models:
-        :param path_dlib_models:
+        Parameters:
+            option: which model to use.
+            path_cv2_models: path of the opencv2 models used for face or eyes detection.
+            path_dlib_models: path of dlib model used for detecting landmarks.
         """
         self.models = {}
         self.dlib_detector = None
@@ -126,12 +127,19 @@ class ImageProcessor:
                     vertical_axis = line_centering_eyes.perpendicular(through=middle_point_eyes_as_point)
 
     def __detect_and_draw_dlib_landmarks(self, frame, gray_frame):
+        """
+        First detects all the faces, then detects the landmarks for each face.
+        The landmarks are then used to save and draw the contours.
+        Parameters:
+            frame: rgb image.
+            gray_frame: gray-scale image.
+        """
         faces = self.dlib_detector(gray_frame)
         for face in faces:
-            x1 = face.left()
-            y1 = face.top()
-            x2 = face.right()
-            y2 = face.bottom()
+            # x1 = face.left()
+            # y1 = face.top()
+            # x2 = face.right()
+            # y2 = face.bottom()
             # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 3)
 
             landmarks = self.dlib_predictor(gray_frame, face)
@@ -173,6 +181,7 @@ class ImageProcessor:
 
     def apply_saved_contours(self, image):
         # Calibration for a vertical image
+        # It is done manually, might need to be changed
         if self.orientation == 'vertical':
             calibration = {
                 'up_shift': 32,
@@ -207,6 +216,7 @@ class StreamProcessor:
 
     def __init__(self, image_processor, index_cam=0):
         """
+        Simply apply a image processing method to a stream of images.
         Parameters:
              index_cam: Integer defining which cam to use for the input stream.
                 If not provided, the first cam found will be used.
@@ -248,6 +258,10 @@ class StreamProcessor:
             # start = datetime.datetime.now()
 
             ret, img = self.capture_stream.read()
+
+            if img is None:
+                print("No image found")
+                continue
 
             self.image_processor.process_image(img)
             cv2.imshow("input", img)

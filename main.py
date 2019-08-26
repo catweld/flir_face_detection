@@ -13,7 +13,7 @@ def main_webcam_stream():
     Apply a model on a stream of data coming from a connected cam.
     """
     image_processor = ImageProcessor(option='dlib_68landmarks')
-    stream_processor = StreamProcessor(image_processor, index_cam=1)
+    stream_processor = StreamProcessor(image_processor, index_cam=0)
 
     stream_processor.run()
 
@@ -65,6 +65,9 @@ def main_flir_image_processor():
 
 
 def main_server_flir_app():
+    """
+    Start displaying the images received by the Flir device as soon as they are available.
+    """
     import socket
     import numpy
 
@@ -121,6 +124,6 @@ if __name__ == '__main__':
     """
     It is possible to choose between 3 different applications.
     """
-    # main_webcam_stream()
-    main_flir_image_processor()
+    main_webcam_stream()
+    # main_flir_image_processor()
     # main_server_flir_app()
