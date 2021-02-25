@@ -64,7 +64,7 @@ class FlirImageExtractor:
         self.flir_img_filename = flir_img_filename
 
         if self.get_image_type().upper().strip() == "TIFF":
-            # valid for tiff images from Zenmuse XTR
+            #valid for tiff images from Zenmuse XTR
             self.use_thumbnail = True
             self.fix_endian = False
 
@@ -132,10 +132,20 @@ class FlirImageExtractor:
         :return:
         """
         meta_json = subprocess.check_output(
-            [self.exiftool_path, '-RawThermalImageType', '-j', self.flir_img_filename])
+             [self.exiftool_path, '-RawThermalImageType', '-j', self.flir_img_filename])
         meta = json.loads(meta_json.decode())[0]
 
         return meta['RawThermalImageType']
+#        try:
+#            meta_json = subprocess.check_output(
+#                [self.exiftool_path, '-RawThermalImageType', '-j', self.flir_img_filename],shell=True)
+#            meta = json.loads(meta_json.decode())[0]
+#        except subprocess.CalledProcessError as exc:
+#            result = exc.output
+#            meta = json.loads(result.decode())[0]
+            
+
+        return meta
 
     def get_rgb_np(self):
         """
@@ -158,8 +168,14 @@ class FlirImageExtractor:
         image_tag = "-EmbeddedImage"
         if self.use_thumbnail:
             image_tag = "-ThumbnailImage"
+        
+        try:   
+            visual_img_bytes = subprocess.check_output([self.exiftool_path, image_tag, "-b", self.flir_img_filename],shell=True)
+            
+        except subprocess.CalledProcessError as exc:
+             result = exc.output
+                
 
-        visual_img_bytes = subprocess.check_output([self.exiftool_path, image_tag, "-b", self.flir_img_filename])
         visual_img_stream = io.BytesIO(visual_img_bytes)
 
         visual_img = Image.open(visual_img_stream)

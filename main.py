@@ -27,7 +27,7 @@ def main_flir_image_processor():
 
     I have left a picture to test out the script.
     """
-    input_file = 'test_images/' + 'flir_20190617T163823.jpg'
+    input_file = 'C:/Users/Catherine/flir_face_detection-master/test_images/flir_20190617T163823.jpg'
 
     fie = FlirImageExtractor()
     fie.process_image(input_file, upsample_thermal=True, transform_rgb=True)
@@ -124,6 +124,6 @@ if __name__ == '__main__':
     """
     It is possible to choose between 3 different applications.
     """
-    main_webcam_stream()
-    # main_flir_image_processor()
+    #main_webcam_stream()
+    main_flir_image_processor()
     # main_server_flir_app()
