@@ -165,6 +165,21 @@ class ImageProcessor:
             forehead_region.detect_region(frame, landmarks)
             self.all_regions.append(forehead_region)
             self.__add_contours(forehead_region.contours)
+            
+            nose_region = FaceRegion('Nose region', StaticContoursDetectors.nose_contours)
+            nose_region.detect_region(frame, landmarks)
+            self.all_regions.append(nose_region)
+            self.__add_contours(nose_region.contours)
+            
+#             supraorbital_region = FaceRegion('Supraorbital region', StaticContoursDetectors.supraorbital_contours)
+#             supraorbital_region.detect_region(frame, landmarks)
+#             self.all_regions.append(supraorbital_region)
+#             self.__add_contours(supraorbital_region.contours)
+
+            background_region = FaceRegion('Background region', StaticContoursDetectors.background_contours)
+            background_region.detect_region(frame, landmarks)
+            self.all_regions.append(background_region)
+            self.__add_contours(background_region.contours)
 
             for contour_type in self.contours.keys():
                 for contour in self.contours[contour_type]:
@@ -205,7 +220,7 @@ class ImageProcessor:
         #                           translation=(calibration['right_shift'], - calibration['up_shift']))
 
     def __reset_contours(self):
-        self.contours = {'rectangle': [], 'line': [], 'circle': [], 'ellipse': [], 'poly': []}
+        self.contours = {'rectangle': [], 'line': [], 'circle': [], 'ellipse': [], 'poly': [], 'background':[]}
 
     def __add_contours(self, contours):
         for contour in contours:
